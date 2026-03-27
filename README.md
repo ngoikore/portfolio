@@ -20,12 +20,15 @@
 ## 📁 Структура
 
 ```
-portfolio/
+portfolio2/
 ├── src/
-│   └── index.html        # Главный файл сайта
-├── .github/
-│   └── workflows/
-│       └── deploy.yml    # Автодеплой на GitHub Pages
+│   ├── index.html          ← портфолио + дропдаун «Мини-игры» в навигации
+│   └── games/
+│       ├── clicker.html    ← Игра 1: Кликер
+│       ├── adventure.html  ← Игра 2: Генератор приключений
+│       └── guess.html      ← Игра 3: Угадай число
+├── .github/workflows/
+│   └── deploy.yml
 └── README.md
 ```
 
