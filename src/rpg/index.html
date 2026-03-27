@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚔️ RPG Task Manager</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <a class="back-link" href="../index.html">← Портфолио</a>
+    <div class="header-title">⚔️ RPG Task Manager ⚔️</div>
+    <button class="reset-btn" id="resetBtn">🗑 Сброс прогресса</button>
+  </header>
+
+  <!-- ===== SETUP SCREEN ===== -->
+  <div id="setupScreen">
+    <div class="setup-card">
+      <div class="setup-title">🏰 Создай героя</div>
+      <p class="setup-sub">Введи имя своего персонажа и выбери аватар</p>
+
+      <div class="avatar-grid">
+        <div class="avatar-opt selected" data-avatar="⚔️">⚔️</div>
+        <div class="avatar-opt" data-avatar="🧙">🧙</div>
+        <div class="avatar-opt" data-avatar="🏹">🏹</div>
+        <div class="avatar-opt" data-avatar="🛡️">🛡️</div>
+        <div class="avatar-opt" data-avatar="🐉">🐉</div>
+        <div class="avatar-opt" data-avatar="🧝">🧝</div>
+        <div class="avatar-opt" data-avatar="⚡">⚡</div>
+        <div class="avatar-opt" data-avatar="💀">💀</div>
+      </div>
+
+      <form id="setupForm">
+        <input class="rpg-input" type="text" id="heroName"
+          placeholder="Имя героя..." maxlength="24" autocomplete="off" />
+        <button class="rpg-btn" type="submit" style="width:100%">
+          ⚔️ Начать приключение
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== APP SCREEN ===== -->
+  <div id="appScreen" class="hidden">
+    <main>
+
+      <!-- CHARACTER CARD -->
+      <div class="char-card">
+        <div class="char-avatar-wrap">
+          <span id="charAvatar">⚔️</span>
+        </div>
+        <div class="char-info">
+          <div class="char-name-row">
+            <span class="char-name" id="charName">Герой</span>
+            <span class="char-level-badge">Ур. <span id="charLevel">1</span></span>
+          </div>
+          <div class="xp-label">Опыт до следующего уровня</div>
+          <div class="xp-track" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <div class="xp-fill" id="xpBar" style="width:0%"></div>
+          </div>
+          <div class="xp-text">
+            <span id="charXp">0</span> / <span id="charXpMax">100</span> XP
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs-row">
+        <button class="tab-btn active" data-tab="tabTasks">📋 Задачи</button>
+        <button class="tab-btn" data-tab="tabStats">📊 Статистика</button>
+        <button class="tab-btn" data-tab="tabHistory">🏆 История</button>
+      </div>
+
+      <!-- ===== TAB: TASKS ===== -->
+      <div id="tabTasks">
+
+        <!-- FORM -->
+        <div class="form-card">
+          <div class="section-header">📝 Новый квест</div>
+          <form id="taskForm">
+            <input class="rpg-input" type="text" id="taskTitle"
+              placeholder="Название задачи..." maxlength="80" autocomplete="off" />
+            <textarea class="rpg-input" id="taskDesc"
+              placeholder="Описание (необязательно)..." maxlength="200"></textarea>
+
+            <div class="diff-row">
+              <button type="button" class="diff-btn" data-diff="easy">🌿 Лёгкая +10 XP</button>
+              <button type="button" class="diff-btn selected" data-diff="medium">⚡ Средняя +25 XP</button>
+              <button type="button" class="diff-btn" data-diff="hard">🔥 Сложная +50 XP</button>
+              <button type="button" class="diff-btn" data-diff="epic">💀 Эпическая +100 XP</button>
+            </div>
+
+            <button class="rpg-btn" type="submit">➕ Добавить квест</button>
+          </form>
+        </div>
+
+        <!-- ACTIVE TASKS -->
+        <div class="form-card">
+          <div class="section-header">⚡ Активные квесты</div>
+          <div class="task-list" id="activeList"></div>
+        </div>
+
+        <!-- COMPLETED TASKS -->
+        <div class="form-card hidden" id="completedSection">
+          <div class="section-header">✅ Выполненные</div>
+          <div class="task-list" id="completedList"></div>
+        </div>
+
+      </div>
+
+      <!-- ===== TAB: STATS ===== -->
+      <div id="tabStats" class="hidden">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-label">Выполнено задач</div>
+            <div class="stat-val" id="statCompleted">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✨</div>
+            <div class="stat-label">Всего заработано XP</div>
+            <div class="stat-val" id="statXp">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⚔️</div>
+            <div class="stat-label">Текущий уровень</div>
+            <div class="stat-val" id="statLevel">1</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-label">Дата создания героя</div>
+            <div class="stat-val" style="font-size:1rem" id="statCreated">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: HISTORY ===== -->
+      <div id="tabHistory" class="hidden">
+        <div class="form-card">
+          <div class="section-header">🏆 История выполненных квестов</div>
+          <div class="task-list" id="completedList2"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- LEVEL UP OVERLAY -->
+  <div id="levelUpOverlay" class="hidden">
+    <div class="levelup-card">
+      <div class="levelup-text">🎉 ПОВЫШЕНИЕ УРОВНЯ!</div>
+      <div class="levelup-num" id="newLevelNum">2</div>
+      <div class="levelup-sub">Ты становишься сильнее, герой!</div>
+    </div>
+  </div>
+
+  <!-- CONFETTI -->
+  <div id="confettiWrap"></div>
+
+  <!-- CONFIRM MODAL -->
+  <div id="confirmModal" class="hidden">
+    <div class="modal-card">
+      <div class="modal-title">⚠️ Сброс прогресса</div>
+      <p class="modal-text">Всё будет удалено: персонаж, задачи, статистика. Это действие нельзя отменить.</p>
+      <div class="modal-btns">
+        <button class="modal-btn-cancel" id="cancelReset">Отмена</button>
+        <button class="modal-btn-confirm" id="confirmReset">Да, сбросить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer"></div>
+
+  <!-- JS MODULES -->
+  <script src="js/storage.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/tasks.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- History tab sync -->
+  <script>
+    // Sync history tab with completed list
+    document.querySelector('[data-tab="tabHistory"]').addEventListener('click', () => {
+      const list = document.getElementById('completedList2');
+      const completed = taskManager.getCompleted();
+      if (completed.length === 0) {
+        list.innerHTML = '<p class="empty-msg">Ещё нет выполненных квестов. Вперёд, герой! ⚔️</p>';
+        return;
+      }
+      list.innerHTML = completed.map(t => {
+        const d = DIFFICULTY[t.difficulty];
+        return `<div class="task-card done">
+          <div class="task-top">
+            <div class="task-body">
+              <div class="task-title">${t.title}</div>
+              ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
+              <div class="task-meta">✅ ${t.completedAt || '—'}</div>
+            </div>
+            <div class="task-right">
+              <span class="diff-badge" style="background:${d.color}22;color:${d.color};border-color:${d.color}44">
+                ${d.icon} ${d.label}
+              </span>
+              <span class="xp-badge">+${t.xp} XP</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    });
+  </script>
+</body>
+</html>
