@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Крестики-нолики — Мини-игры</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg3: #161625;
+      --accent: #00e5ff; --accent2: #7c3aed;
+      --text: #e2e8f0; --muted: #64748b;
+      --border: rgba(0,229,255,0.15);
+      --x-color: #00e5ff; --o-color: #f472b6;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; padding: 5rem 1.5rem 3rem;
+    }
+    .back-link {
+      position: fixed; top: 1.2rem; left: 1.5rem;
+      color: var(--accent); text-decoration: none; font-size: 0.82rem;
+      display: flex; align-items: center; gap: 0.4rem; opacity: 0.8;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 { font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 0.3rem; text-align: center; }
+    .subtitle { font-size: 0.75rem; color: var(--muted); text-align: center; margin-bottom: 1.5rem; }
+
+    /* Score */
+    .score-bar {
+      display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center;
+    }
+    .score-box {
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.7rem 1.5rem;
+      text-align: center; min-width: 100px;
+    }
+    .score-box.active { border-color: var(--accent); box-shadow: 0 0 16px rgba(0,229,255,0.2); }
+    .score-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .score-val { font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; }
+    .score-x .score-val { color: var(--x-color); }
+    .score-o .score-val { color: var(--o-color); }
+    .score-draw .score-val { color: var(--muted); }
+
+    /* Mode toggle */
+    .mode-row {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-bottom: 1.2rem; font-size: 0.8rem; color: var(--muted);
+    }
+    .toggle {
+      position: relative; width: 40px; height: 22px;
+      background: var(--bg3); border-radius: 11px;
+      border: 1px solid var(--border); cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle.on { background: rgba(0,229,255,0.2); border-color: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px;
+      border-radius: 50%; background: var(--muted);
+      transition: transform 0.3s, background 0.3s;
+    }
+    .toggle.on::after { transform: translateX(18px); background: var(--accent); }
+
+    /* Status */
+    .status-msg {
+      font-family: var(--font-head);
+      font-size: 1.1rem; font-weight: 700;
+      min-height: 1.6em;
+      margin-bottom: 1.2rem;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    /* Board */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1.5rem;
+      width: min(360px, 90vw);
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head);
+      font-size: 3rem; font-weight: 800;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      user-select: none;
+    }
+    .cell:hover:not(.taken) {
+      background: rgba(0,229,255,0.05);
+      border-color: rgba(0,229,255,0.3);
+      transform: scale(1.03);
+    }
+    .cell.x { color: var(--x-color); cursor: default; }
+    .cell.o { color: var(--o-color); cursor: default; }
+    .cell.taken { cursor: default; }
+    .cell.win-line {
+      background: rgba(0,229,255,0.12);
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(0,229,255,0.25);
+      animation: winPulse 0.6s ease;
+    }
+    .cell.win-line.o-win {
+      background: rgba(244,114,182,0.12);
+      border-color: var(--o-color);
+      box-shadow: 0 0 20px rgba(244,114,182,0.25);
+    }
+    @keyframes winPulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    .cell.pop { animation: cellPop 0.2s ease; }
+    @keyframes cellPop {
+      0%   { transform: scale(0.7); }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .btn-row { display: flex; gap: 0.75rem; justify-content: center; }
+    .btn {
+      padding: 0.7rem 2rem; border-radius: 8px;
+      font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; border: none; transition: transform 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-new { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="../index.html">← Портфолио</a>
+
+  <h1>✕ Крестики-нолики ○</h1>
+  <p class="subtitle">Три в ряд — победитель!</p>
+
+  <div class="score-bar">
+    <div class="score-box score-x" id="scoreBoxX">
+      <div class="score-label">Игрок X</div>
+      <div class="score-val" id="scoreX">0</div>
+    </div>
+    <div class="score-box score-draw">
+      <div class="score-label">Ничьи</div>
+      <div class="score-val" id="scoreDraw">0</div>
+    </div>
+    <div class="score-box score-o" id="scoreBoxO">
+      <div class="score-label">Игрок O</div>
+      <div class="score-val" id="scoreO">0</div>
+    </div>
+  </div>
+
+  <div class="mode-row">
+    <span>Против компьютера</span>
+    <div class="toggle" id="aiToggle"></div>
+  </div>
+
+  <div class="status-msg" id="statusMsg" style="color:var(--accent)">Ход игрока X</div>
+
+  <div class="board" id="board">
+    <div class="cell" data-i="0"></div>
+    <div class="cell" data-i="1"></div>
+    <div class="cell" data-i="2"></div>
+    <div class="cell" data-i="3"></div>
+    <div class="cell" data-i="4"></div>
+    <div class="cell" data-i="5"></div>
+    <div class="cell" data-i="6"></div>
+    <div class="cell" data-i="7"></div>
+    <div class="cell" data-i="8"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-new" id="newGameBtn">↺ Новая игра</button>
+  </div>
+
+  <script>
+    const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+    let board = Array(9).fill('');
+    let current = 'X', gameOver = false, aiMode = false;
+    let scores = { X: 0, O: 0, draw: 0 };
+
+    const cells    = document.querySelectorAll('.cell');
+    const statusEl = document.getElementById('statusMsg');
+    const aiToggle = document.getElementById('aiToggle');
+    const scoreXEl = document.getElementById('scoreX');
+    const scoreOEl = document.getElementById('scoreO');
+    const scoreDrawEl = document.getElementById('scoreDraw');
+    const scoreBoxX = document.getElementById('scoreBoxX');
+    const scoreBoxO = document.getElementById('scoreBoxO');
+
+    aiToggle.addEventListener('click', () => {
+      aiMode = !aiMode;
+      aiToggle.classList.toggle('on', aiMode);
+      newGame();
+    });
+
+    document.getElementById('newGameBtn').addEventListener('click', newGame);
+
+    cells.forEach(cell => {
+      cell.addEventListener('click', () => {
+        const i = parseInt(cell.dataset.i);
+        if (gameOver || board[i]) return;
+        if (aiMode && current === 'O') return;
+        makeMove(i);
+      });
+    });
+
+    function makeMove(i) {
+      board[i] = current;
+      const cell = cells[i];
+      cell.textContent = current;
+      cell.classList.add(current.toLowerCase(), 'taken', 'pop');
+
+      const win = checkWin();
+      if (win) {
+        highlightWin(win);
+        scores[current]++;
+        updateScores();
+        statusEl.textContent = current === 'X' ? '🏆 Игрок X победил!' : '🏆 Игрок O победил!';
+        statusEl.style.color = current === 'X' ? 'var(--x-color)' : 'var(--o-color)';
+        gameOver = true;
+        return;
+      }
+      if (board.every(v => v)) {
+        statusEl.textContent = '🤝 Ничья!';
+        statusEl.style.color = 'var(--muted)';
+        scores.draw++;
+        updateScores();
+        gameOver = true;
+        return;
+      }
+
+      current = current === 'X' ? 'O' : 'X';
+      updateActiveBox();
+      statusEl.textContent = `Ход игрока ${current}`;
+      statusEl.style.color = current === 'X' ? 'var(--x-color)' : 'var(--o-color)';
+
+      if (aiMode && current === 'O' && !gameOver) {
+        setTimeout(aiMove, 400);
+      }
+    }
+
+    function aiMove() {
+      // Try to win, then block, then center, then random
+      let move = findBest('O') ?? findBest('X') ?? (board[4] === '' ? 4 : null) ?? randomMove();
+      if (move !== null) makeMove(move);
+    }
+
+    function findBest(player) {
+      for (const [a,b,c] of WINS) {
+        const line = [board[a], board[b], board[c]];
+        if (line.filter(v => v === player).length === 2 && line.includes('')) {
+          return [a,b,c][line.indexOf('')];
+        }
+      }
+      return null;
+    }
+
+    function randomMove() {
+      const empty = board.map((v,i) => v === '' ? i : -1).filter(i => i >= 0);
+      return empty.length ? empty[Math.floor(Math.random() * empty.length)] : null;
+    }
+
+    function checkWin() {
+      for (const combo of WINS) {
+        const [a,b,c] = combo;
+        if (board[a] && board[a] === board[b] && board[b] === board[c]) return combo;
+      }
+      return null;
+    }
+
+    function highlightWin(combo) {
+      const isO = board[combo[0]] === 'O';
+      combo.forEach(i => cells[i].classList.add('win-line', isO ? 'o-win' : ''));
+    }
+
+    function updateScores() {
+      scoreXEl.textContent = scores.X;
+      scoreOEl.textContent = scores.O;
+      scoreDrawEl.textContent = scores.draw;
+    }
+
+    function updateActiveBox() {
+      scoreBoxX.classList.toggle('active', current === 'X');
+      scoreBoxO.classList.toggle('active', current === 'O');
+    }
+
+    function newGame() {
+      board = Array(9).fill('');
+      current = 'X'; gameOver = false;
+      cells.forEach(c => {
+        c.textContent = '';
+        c.className = 'cell';
+      });
+      statusEl.textContent = 'Ход игрока X';
+      statusEl.style.color = 'var(--x-color)';
+      updateActiveBox();
+    }
+
+    updateActiveBox();
+  </script>
+</body>
+</html>
