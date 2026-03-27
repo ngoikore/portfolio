@@ -1,1 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Реакция — Мини-игры</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #10101a; --bg3: #161625;
+      --accent: #00e5ff; --accent2: #7c3aed;
+      --text: #e2e8f0; --muted: #64748b;
+      --border: rgba(0,229,255,0.15);
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 5rem 1.5rem 2rem;
+    }
+    .back-link {
+      position: fixed; top: 1.2rem; left: 1.5rem;
+      color: var(--accent); text-decoration: none; font-size: 0.82rem;
+      display: flex; align-items: center; gap: 0.4rem; opacity: 0.8;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 { font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 0.3rem; text-align: center; }
+    .subtitle { font-size: 0.75rem; color: var(--muted); text-align: center; margin-bottom: 1.5rem; }
+
+    .stats-row {
+      display: flex; gap: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; justify-content: center;
+    }
+    .stat-box {
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.8rem 1.5rem;
+      text-align: center; min-width: 110px;
+    }
+    .stat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .stat-val { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+    #timerVal { color: #fcd34d; }
+    #avgVal   { color: #a78bfa; }
+
+    /* Game arena */
+    #arena {
+      position: relative;
+      width: min(600px, 100%);
+      height: 360px;
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 1.2rem;
+      cursor: crosshair;
+    }
+    #arena.waiting { cursor: default; }
+
+    .arena-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 2rem;
+      pointer-events: none;
+    }
+
+    #targetBtn {
+      position: absolute;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border: none;
+      cursor: pointer;
+      display: none;
+      font-family: var(--font-head);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #000;
+      box-shadow: 0 0 30px rgba(0,229,255,0.5);
+      transition: transform 0.1s;
+      animation: popIn 0.15s ease;
+    }
+    #targetBtn:active { transform: scale(0.9); }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* Reaction flash */
+    .react-flash {
+      position: absolute;
+      pointer-events: none;
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: rgba(0,229,255,0.3);
+      transform: translate(-50%, -50%) scale(0);
+      animation: ripple 0.5s ease forwards;
+    }
+    @keyframes ripple {
+      to { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+    }
+
+    /* Reaction time badge */
+    .rt-badge {
+      position: absolute;
+      pointer-events: none;
+      font-family: var(--font-head);
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(0,229,255,0.8);
+      animation: floatBadge 0.8s ease forwards;
+    }
+    @keyframes floatBadge {
+      0%  { opacity:1; transform: translateY(0); }
+      100%{ opacity:0; transform: translateY(-50px); }
+    }
+
+    .btn-row { display: flex; gap: 0.75rem; justify-content: center; }
+    .btn {
+      padding: 0.7rem 1.8rem; border-radius: 8px;
+      font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;
+      cursor: pointer; border: none; transition: transform 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-start { background: var(--accent); color: #000; box-shadow: 0 0 20px rgba(0,229,255,0.25); }
+    .btn-reset { background: rgba(248,113,113,0.12); color: #fca5a5; border: 1px solid rgba(248,113,113,0.3); }
+
+    .result-card {
+      margin-top: 1.2rem;
+      background: rgba(22,22,37,0.9);
+      border: 1px solid rgba(0,229,255,0.25);
+      border-radius: 14px;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      display: none;
+      width: min(600px, 100%);
+    }
+    .result-card.show { display: block; }
+    .result-title { font-family: var(--font-head); font-size: 1.2rem; font-weight: 800; color: var(--accent); margin-bottom: 0.8rem; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .result-item { background: var(--bg3); border-radius: 10px; padding: 0.75rem; }
+    .result-item-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; }
+    .result-item-val { font-family: var(--font-head); font-size: 1.3rem; font-weight: 800; color: var(--text); }
+
+    /* History list */
+    .history-row {
+      width: min(600px,100%);
+      margin-top: 1rem;
+      display: none;
+    }
+    .history-row.show { display: block; }
+    .history-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .history-dots { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .hdot {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(0,229,255,0.08);
+      border: 1px solid rgba(0,229,255,0.2);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="../index.html">← Портфолио</a>
+
+  <h1>⚡ Скорость реакции</h1>
+  <p class="subtitle">Нажмите на кружок как можно быстрее! 30 секунд.</p>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-label">Время</div><div class="stat-val" id="timerVal">30</div></div>
+    <div class="stat-box"><div class="stat-label">Нажатий</div><div class="stat-val" id="hitsVal">0</div></div>
+    <div class="stat-box"><div class="stat-label">Ср. реакция</div><div class="stat-val" id="avgVal">—</div></div>
+  </div>
+
+  <div id="arena" class="waiting">
+    <div class="arena-hint" id="arenaHint">Нажмите «Старт» для начала игры</div>
+    <button id="targetBtn">ТАП!</button>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-start" id="startBtn">▶ Старт</button>
+    <button class="btn btn-reset" id="resetBtn">↺ Сброс</button>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-title">🏁 Игра окончена!</div>
+    <div class="result-grid">
+      <div class="result-item"><div class="result-item-label">Успешных нажатий</div><div class="result-item-val" id="resHits">0</div></div>
+      <div class="result-item"><div class="result-item-label">Среднее время</div><div class="result-item-val" id="resAvg">—</div></div>
+      <div class="result-item"><div class="result-item-label">Лучшая реакция</div><div class="result-item-val" id="resBest">—</div></div>
+      <div class="result-item"><div class="result-item-label">Худшая реакция</div><div class="result-item-val" id="resWorst">—</div></div>
+    </div>
+  </div>
+
+  <div class="history-row" id="historyRow">
+    <div class="history-label">Все попытки (мс)</div>
+    <div class="history-dots" id="historyDots"></div>
+  </div>
+
+  <script>
+    let running = false, timeLeft = 30, hits = 0;
+    let gameTimer = null, spawnTimer = null, appearTime = 0;
+    let reactions = [];
+
+    const arena      = document.getElementById('arena');
+    const targetBtn  = document.getElementById('targetBtn');
+    const arenaHint  = document.getElementById('arenaHint');
+    const startBtn   = document.getElementById('startBtn');
+    const resetBtn   = document.getElementById('resetBtn');
+    const timerEl    = document.getElementById('timerVal');
+    const hitsEl     = document.getElementById('hitsVal');
+    const avgEl      = document.getElementById('avgVal');
+    const resultCard = document.getElementById('resultCard');
+    const historyRow = document.getElementById('historyRow');
+    const histDots   = document.getElementById('historyDots');
+
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
+
+    targetBtn.addEventListener('click', (e) => {
+      if (!running) return;
+      const rt = Date.now() - appearTime;
+      reactions.push(rt);
+      hits++;
+      hitsEl.textContent = hits;
+      const avg = Math.round(reactions.reduce((a,b)=>a+b,0)/reactions.length);
+      avgEl.textContent = avg + 'мс';
+
+      // visual feedback
+      const ripple = document.createElement('div');
+      ripple.className = 'react-flash';
+      ripple.style.left = e.offsetX + 'px';
+      ripple.style.top  = e.offsetY + 'px';
+      arena.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 500);
+
+      const badge = document.createElement('div');
+      badge.className = 'rt-badge';
+      badge.textContent = rt + 'мс';
+      badge.style.left = (parseInt(targetBtn.style.left) + 10) + 'px';
+      badge.style.top  = (parseInt(targetBtn.style.top) - 20) + 'px';
+      arena.appendChild(badge);
+      setTimeout(() => badge.remove(), 800);
+
+      // add to history dots
+      const dot = document.createElement('span');
+      dot.className = 'hdot';
+      dot.textContent = rt;
+      histDots.appendChild(dot);
+      historyRow.classList.add('show');
+
+      hideTarget();
+      scheduleNext();
+    });
+
+    function startGame() {
+      running = true; timeLeft = 30; hits = 0; reactions = [];
+      hitsEl.textContent = 0;
+      timerEl.textContent = 30;
+      avgEl.textContent = '—';
+      resultCard.classList.remove('show');
+      historyRow.classList.remove('show');
+      histDots.innerHTML = '';
+      arenaHint.style.display = 'none';
+      arena.classList.remove('waiting');
+      startBtn.disabled = true;
+
+      gameTimer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+
+      scheduleNext();
+    }
+
+    function scheduleNext() {
+      if (!running) return;
+      const delay = 1000 + Math.random() * 4000;
+      spawnTimer = setTimeout(() => {
+        if (!running) return;
+        showTarget();
+      }, delay);
+    }
+
+    function showTarget() {
+      const aW = arena.clientWidth - 90;
+      const aH = arena.clientHeight - 90;
+      const x = Math.floor(Math.random() * aW) + 5;
+      const y = Math.floor(Math.random() * aH) + 5;
+      targetBtn.style.left = x + 'px';
+      targetBtn.style.top  = y + 'px';
+      targetBtn.style.display = 'flex';
+      targetBtn.style.alignItems = 'center';
+      targetBtn.style.justifyContent = 'center';
+      appearTime = Date.now();
+    }
+
+    function hideTarget() {
+      targetBtn.style.display = 'none';
+    }
+
+    function endGame() {
+      running = false;
+      clearInterval(gameTimer);
+      clearTimeout(spawnTimer);
+      hideTarget();
+      startBtn.disabled = false;
+      arena.classList.add('waiting');
+      arenaHint.style.display = 'flex';
+      arenaHint.textContent = 'Игра окончена! Нажмите «Старт» снова.';
+
+      document.getElementById('resHits').textContent = hits;
+      if (reactions.length > 0) {
+        const avg  = Math.round(reactions.reduce((a,b)=>a+b,0)/reactions.length);
+        const best = Math.min(...reactions);
+        const worst= Math.max(...reactions);
+        document.getElementById('resAvg').textContent   = avg + ' мс';
+        document.getElementById('resBest').textContent  = best + ' мс';
+        document.getElementById('resWorst').textContent = worst + ' мс';
+      } else {
+        document.getElementById('resAvg').textContent   = '—';
+        document.getElementById('resBest').textContent  = '—';
+        document.getElementById('resWorst').textContent = '—';
+      }
+      resultCard.classList.add('show');
+    }
+
+    function resetGame() {
+      running = false;
+      clearInterval(gameTimer);
+      clearTimeout(spawnTimer);
+      hideTarget();
+      timeLeft = 30; hits = 0; reactions = [];
+      timerEl.textContent = 30;
+      hitsEl.textContent  = 0;
+      avgEl.textContent   = '—';
+      startBtn.disabled   = false;
+      resultCard.classList.remove('show');
+      historyRow.classList.remove('show');
+      histDots.innerHTML  = '';
+      arena.classList.add('waiting');
+      arenaHint.style.display = 'flex';
+      arenaHint.textContent = 'Нажмите «Старт» для начала игры';
+    }
+  </script>
+</body>
+</html>
 
