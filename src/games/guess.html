@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Угадай число — Мини-игры</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #10101a; --bg3: #161625;
+      --accent: #00e5ff; --accent2: #7c3aed;
+      --text: #e2e8f0; --muted: #64748b;
+      --border: rgba(0,229,255,0.15);
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 5rem 1.5rem 2rem;
+    }
+    .back-link {
+      position: fixed; top: 1.2rem; left: 1.5rem;
+      color: var(--accent); text-decoration: none; font-size: 0.82rem;
+      display: flex; align-items: center; gap: 0.4rem;
+      opacity: 0.8; transition: opacity 0.2s;
+    }
+    .back-link:hover { opacity: 1; }
+
+    .game-card {
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(0,229,255,0.06);
+    }
+
+    h1 { font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { font-size: 0.75rem; color: var(--muted); margin-bottom: 1.5rem; }
+
+    .attempts-bar {
+      display: flex;
+      gap: 0.4rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .attempt-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+    .attempt-dot.used { background: #f87171; border-color: #f87171; }
+    .attempt-dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+    .range-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .range-bar {
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .range-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 2px;
+      transition: left 0.4s, right 0.4s;
+      position: absolute;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .num-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      color: var(--text);
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .num-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+    }
+    .num-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn {
+      padding: 0.75rem 1.2rem;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-check { background: var(--accent); color: #000; }
+    .btn-new {
+      background: rgba(124,58,237,0.2);
+      color: #a78bfa;
+      border: 1px solid rgba(124,58,237,0.4);
+    }
+
+    .message {
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin-bottom: 1.2rem;
+      min-height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .msg-too-low  { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; }
+    .msg-too-high { background: rgba(99,179,237,0.1); border: 1px solid rgba(99,179,237,0.3); color: #93c5fd; }
+    .msg-win      { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+    .msg-lose     { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: #fca5a5; }
+    .msg-empty    { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; }
+
+    .record-line {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+    .record-line span { color: #a78bfa; font-weight: 700; }
+
+    /* shake animation */
+    @keyframes shake {
+      0%,100%{ transform:translateX(0) }
+      20%{ transform:translateX(-8px) }
+      40%{ transform:translateX(8px) }
+      60%{ transform:translateX(-5px) }
+      80%{ transform:translateX(5px) }
+    }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="../index.html">← Портфолио</a>
+
+  <div class="game-card">
+    <h1>🔢 Угадай число</h1>
+    <p class="subtitle">Число от 1 до 100 — у вас 10 попыток!</p>
+
+    <div class="attempts-bar" id="attemptsBar"></div>
+
+    <div class="range-hint" id="rangeHint">Диапазон: 1 — 100</div>
+    <div class="range-bar">
+      <div class="range-fill" id="rangeFill" style="left:0%;right:0%"></div>
+    </div>
+
+    <div class="message msg-empty" id="message">Введите число и нажмите «Проверить»</div>
+
+    <div class="input-group">
+      <input class="num-input" type="number" id="numInput" min="1" max="100" placeholder="?" />
+      <button class="btn btn-check" id="checkBtn">Проверить</button>
+    </div>
+
+    <button class="btn btn-new" id="newGameBtn" style="width:100%">↺ Новая игра</button>
+
+    <p class="record-line">Рекорд (мин. попыток): <span id="recordEl">—</span></p>
+  </div>
+
+  <script>
+    const MAX_ATTEMPTS = 10;
+    let secret, attempts, low, high, gameOver;
+
+    const attemptsBar = document.getElementById('attemptsBar');
+    const messageEl   = document.getElementById('message');
+    const numInput    = document.getElementById('numInput');
+    const checkBtn    = document.getElementById('checkBtn');
+    const newGameBtn  = document.getElementById('newGameBtn');
+    const rangeHint   = document.getElementById('rangeHint');
+    const rangeFill   = document.getElementById('rangeFill');
+    const recordEl    = document.getElementById('recordEl');
+
+    let record = parseInt(localStorage.getItem('guess_record') || '0');
+    recordEl.textContent = record > 0 ? record + ' попыток' : '—';
+
+    startGame();
+
+    function startGame() {
+      secret   = Math.floor(Math.random() * 100) + 1;
+      attempts = 0;
+      low = 1; high = 100;
+      gameOver = false;
+
+      numInput.disabled  = false;
+      numInput.value     = '';
+      checkBtn.disabled  = false;
+
+      setMessage('msg-empty', 'Введите число и нажмите «Проверить»');
+      updateRange(1, 100);
+      renderDots();
+      numInput.focus();
+    }
+
+    checkBtn.addEventListener('click', check);
+    numInput.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+    newGameBtn.addEventListener('click', startGame);
+
+    function check() {
+      if (gameOver) return;
+      const val = parseInt(numInput.value);
+      if (isNaN(val) || val < 1 || val > 100) {
+        numInput.classList.remove('shake');
+        void numInput.offsetWidth;
+        numInput.classList.add('shake');
+        setMessage('msg-empty', '⚠️ Введите число от 1 до 100');
+        return;
+      }
+
+      attempts++;
+      renderDots();
+      numInput.value = '';
+
+      if (val === secret) {
+        gameOver = true;
+        numInput.disabled = true;
+        checkBtn.disabled = true;
+        const used = attempts;
+        if (record === 0 || used < record) {
+          record = used;
+          localStorage.setItem('guess_record', record);
+          recordEl.textContent = record + ' попыток';
+          setMessage('msg-win', `🏆 Новый рекорд! Угадали за ${used} попыток! Число было ${secret}.`);
+        } else {
+          setMessage('msg-win', `🎉 Угадали за ${used} попыток! Число было ${secret}.`);
+        }
+      } else if (attempts >= MAX_ATTEMPTS) {
+        gameOver = true;
+        numInput.disabled = true;
+        checkBtn.disabled = true;
+        setMessage('msg-lose', `💀 Попытки закончились! Загаданное число: ${secret}.`);
+      } else if (val < secret) {
+        low = Math.max(low, val + 1);
+        updateRange(low, high);
+        setMessage('msg-too-low', `📈 Слишком мало! Осталось попыток: ${MAX_ATTEMPTS - attempts}`);
+      } else {
+        high = Math.min(high, val - 1);
+        updateRange(low, high);
+        setMessage('msg-too-high', `📉 Слишком много! Осталось попыток: ${MAX_ATTEMPTS - attempts}`);
+      }
+    }
+
+    function setMessage(cls, text) {
+      messageEl.className = 'message ' + cls;
+      messageEl.textContent = text;
+    }
+
+    function renderDots() {
+      attemptsBar.innerHTML = '';
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'attempt-dot';
+        if (i < attempts) dot.classList.add('used');
+        else if (i === attempts && !gameOver) dot.classList.add('current');
+        attemptsBar.appendChild(dot);
+      }
+    }
+
+    function updateRange(lo, hi) {
+      rangeHint.textContent = `Диапазон: ${lo} — ${hi}`;
+      const leftPct  = ((lo - 1) / 99 * 100).toFixed(1);
+      const rightPct = ((100 - hi) / 99 * 100).toFixed(1);
+      rangeFill.style.left  = leftPct + '%';
+      rangeFill.style.right = rightPct + '%';
+    }
+  </script>
+</body>
+</html>
