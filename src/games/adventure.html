@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Генератор приключений — Мини-игры</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #10101a; --bg3: #161625;
+      --accent: #00e5ff; --accent2: #7c3aed;
+      --text: #e2e8f0; --muted: #64748b;
+      --border: rgba(0,229,255,0.15);
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      padding: 5rem 1.5rem 3rem;
+    }
+    .back-link {
+      position: fixed;
+      top: 1.2rem; left: 1.5rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.82rem;
+      display: flex; align-items: center; gap: 0.4rem;
+      opacity: 0.8; transition: opacity 0.2s;
+    }
+    .back-link:hover { opacity: 1; }
+
+    .container { max-width: 620px; margin: 0 auto; }
+
+    .game-card {
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 60px rgba(0,229,255,0.05);
+    }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+      text-align: center;
+    }
+    .subtitle { font-size: 0.75rem; color: var(--muted); text-align: center; margin-bottom: 2rem; }
+
+    .adventure-display {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .adventure-text {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.7;
+      text-align: center;
+    }
+    .adventure-text.empty { color: var(--muted); font-size: 0.85rem; }
+
+    .chars-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .char-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .char-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+    .char-val { font-size: 0.82rem; color: var(--accent); font-weight: 700; min-height: 1.2em; }
+
+    .btn-row { display: flex; gap: 0.75rem; }
+    .btn {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-generate {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #000;
+      box-shadow: 0 0 20px rgba(0,229,255,0.2);
+    }
+    .btn-clear {
+      background: rgba(248,113,113,0.1);
+      color: #fca5a5;
+      border: 1px solid rgba(248,113,113,0.3);
+    }
+
+    /* History */
+    .history-card {
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem 2.5rem;
+    }
+    .history-title {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-count {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .history-empty { color: var(--muted); font-size: 0.82rem; text-align: center; padding: 1.5rem 0; }
+
+    .history-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 360px; overflow-y: auto; }
+    .history-list::-webkit-scrollbar { width: 4px; }
+    .history-list::-webkit-scrollbar-thumb { background: var(--accent2); border-radius: 2px; }
+
+    .history-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .history-time { font-size: 0.67rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .history-text { font-size: 0.82rem; color: var(--text); line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="../index.html">← Портфолио</a>
+
+  <div class="container">
+    <div class="game-card">
+      <h1>🗺️ Генератор приключений</h1>
+      <p class="subtitle">Создай уникальную историю одним нажатием!</p>
+
+      <div class="chars-row">
+        <div class="char-box">
+          <div class="char-label">👤 Персонаж</div>
+          <div class="char-val" id="charVal">—</div>
+        </div>
+        <div class="char-box">
+          <div class="char-label">📍 Локация</div>
+          <div class="char-val" id="locVal">—</div>
+        </div>
+        <div class="char-box">
+          <div class="char-label">👹 Злодей</div>
+          <div class="char-label" style="margin-top:0.2rem"></div>
+          <div class="char-val" id="villainVal">—</div>
+        </div>
+      </div>
+
+      <div class="adventure-display">
+        <p class="adventure-text empty" id="adventureText">Нажмите кнопку, чтобы начать приключение...</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-generate" id="generateBtn">⚔️ Сгенерировать приключение</button>
+        <button class="btn btn-clear" id="clearBtn">🗑 Очистить историю</button>
+      </div>
+    </div>
+
+    <div class="history-card">
+      <div class="history-title">
+        История приключений
+        <span class="history-count" id="histCount">0 записей</span>
+      </div>
+      <div id="historyList"><p class="history-empty">История пуста. Сгенерируйте первое приключение!</p></div>
+    </div>
+  </div>
+
+  <script>
+    const characters = ['рыцарь','маг','вор','лучница','друид','паладин','некромант','берсерк','монах','алхимик'];
+    const locations  = ['тёмный лес','заброшенный замок','подводное царство','вулканические пещеры','плавучий город','древние руины','ледяная тундра','небесный остров','зачарованная деревня','туманные горы'];
+    const villains   = ['дракон','колдун','гоблин','вампир','демон хаоса','орда гоблинов','призрак короля','ледяной великан','механический голем','тёмный рыцарь'];
+
+    const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    let history = JSON.parse(localStorage.getItem('adventure_history') || '[]');
+
+    renderHistory();
+
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      const char    = rand(characters);
+      const loc     = rand(locations);
+      const villain = rand(villains);
+      const text    = `Ваш персонаж — ${char} находится в ${loc} и сражается с ${villain}.`;
+
+      document.getElementById('charVal').textContent    = char;
+      document.getElementById('locVal').textContent     = loc;
+      document.getElementById('villainVal').textContent = villain;
+
+      const textEl = document.getElementById('adventureText');
+      textEl.textContent = text;
+      textEl.classList.remove('empty');
+
+      const entry = { text, time: new Date().toLocaleString('ru') };
+      history.unshift(entry);
+      if (history.length > 20) history.pop();
+      localStorage.setItem('adventure_history', JSON.stringify(history));
+      renderHistory();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      history = [];
+      localStorage.removeItem('adventure_history');
+      renderHistory();
+      document.getElementById('adventureText').textContent = 'Нажмите кнопку, чтобы начать приключение...';
+      document.getElementById('adventureText').classList.add('empty');
+      document.getElementById('charVal').textContent = '—';
+      document.getElementById('locVal').textContent  = '—';
+      document.getElementById('villainVal').textContent = '—';
+    });
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      document.getElementById('histCount').textContent = history.length + ' записей';
+      if (history.length === 0) {
+        list.innerHTML = '<p class="history-empty">История пуста. Сгенерируйте первое приключение!</p>';
+        return;
+      }
+      list.innerHTML = '';
+      const ul = document.createElement('div');
+      ul.className = 'history-list';
+      history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<div class="history-time">${item.time}</div><div class="history-text">${item.text}</div>`;
+        ul.appendChild(div);
+      });
+      list.appendChild(ul);
+    }
+  </script>
+</body>
+</html>
