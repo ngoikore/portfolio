@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Кликер — Мини-игры</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #10101a; --bg3: #161625;
+      --accent: #00e5ff; --accent2: #7c3aed;
+      --text: #e2e8f0; --muted: #64748b;
+      --border: rgba(0,229,255,0.15);
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .back-link {
+      position: fixed;
+      top: 1.2rem; left: 1.5rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .back-link:hover { opacity: 1; }
+
+    .game-card {
+      background: rgba(22,22,37,0.9);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(0,229,255,0.06);
+    }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .subtitle { font-size: 0.75rem; color: var(--muted); margin-bottom: 2rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 0.5rem;
+    }
+    .stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+    .stat-val { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--text); }
+    #timerVal { color: var(--accent); }
+    #recordVal { color: #a78bfa; }
+
+    .click-btn {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 800;
+      color: #000;
+      letter-spacing: 0.05em;
+      transition: transform 0.08s, box-shadow 0.15s;
+      box-shadow: 0 0 40px rgba(0,229,255,0.3);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    .click-btn:active { transform: scale(0.93); }
+    .click-btn:disabled {
+      background: var(--bg3);
+      color: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .click-btn.flash { animation: flash 0.1s ease; }
+    @keyframes flash {
+      0%   { box-shadow: 0 0 40px rgba(0,229,255,0.3); }
+      50%  { box-shadow: 0 0 80px rgba(0,229,255,0.8), 0 0 120px rgba(124,58,237,0.5); }
+      100% { box-shadow: 0 0 40px rgba(0,229,255,0.3); }
+    }
+
+    .btn-row { display: flex; gap: 0.75rem; justify-content: center; }
+    .btn {
+      padding: 0.65rem 1.5rem;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-reset {
+      background: rgba(248,113,113,0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(248,113,113,0.3);
+    }
+    .btn-start {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 0 20px rgba(0,229,255,0.3);
+    }
+
+    .result-msg {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 10px;
+      background: rgba(0,229,255,0.08);
+      border: 1px solid rgba(0,229,255,0.25);
+      color: var(--accent);
+      font-size: 0.9rem;
+      display: none;
+    }
+    .result-msg.show { display: block; }
+
+    /* floating +1 */
+    .plus-one {
+      position: fixed;
+      font-family: var(--font-head);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      pointer-events: none;
+      animation: floatUp 0.7s ease forwards;
+      z-index: 999;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1.4); }
+    }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="../index.html">← Портфолио</a>
+
+  <div class="game-card">
+    <h1>⚡ Кликер</h1>
+    <p class="subtitle">Кликай как можно быстрее за 30 секунд!</p>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-label">Время</div>
+        <div class="stat-val" id="timerVal">30</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Счёт</div>
+        <div class="stat-val" id="scoreVal">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Рекорд</div>
+        <div class="stat-val" id="recordVal">0</div>
+      </div>
+    </div>
+
+    <button class="click-btn" id="clickBtn" disabled>НАЖМИ<br>МЕНЯ!</button>
+
+    <div class="btn-row">
+      <button class="btn btn-start" id="startBtn">▶ Старт</button>
+      <button class="btn btn-reset" id="resetBtn">↺ Сброс</button>
+    </div>
+
+    <div class="result-msg" id="resultMsg"></div>
+  </div>
+
+  <script>
+    let score = 0, timeLeft = 30, timer = null, running = false;
+    const scoreEl  = document.getElementById('scoreVal');
+    const timerEl  = document.getElementById('timerVal');
+    const recordEl = document.getElementById('recordVal');
+    const clickBtn = document.getElementById('clickBtn');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultMsg = document.getElementById('resultMsg');
+
+    let record = parseInt(localStorage.getItem('clicker_record') || '0');
+    recordEl.textContent = record;
+
+    startBtn.addEventListener('click', () => {
+      if (running) return;
+      score = 0; timeLeft = 30;
+      scoreEl.textContent = 0;
+      timerEl.textContent = 30;
+      resultMsg.classList.remove('show');
+      running = true;
+      clickBtn.disabled = false;
+      startBtn.disabled = true;
+
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    });
+
+    clickBtn.addEventListener('click', (e) => {
+      if (!running) return;
+      score++;
+      scoreEl.textContent = score;
+      clickBtn.classList.remove('flash');
+      void clickBtn.offsetWidth;
+      clickBtn.classList.add('flash');
+      spawnFloat(e.clientX, e.clientY);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      clearInterval(timer);
+      running = false;
+      score = 0; timeLeft = 30;
+      scoreEl.textContent = 0;
+      timerEl.textContent = 30;
+      clickBtn.disabled = true;
+      startBtn.disabled = false;
+      resultMsg.classList.remove('show');
+    });
+
+    function endGame() {
+      clearInterval(timer);
+      running = false;
+      clickBtn.disabled = true;
+      startBtn.disabled = false;
+      if (score > record) {
+        record = score;
+        localStorage.setItem('clicker_record', record);
+        recordEl.textContent = record;
+        resultMsg.textContent = `🏆 Новый рекорд! Вы набрали ${score} очков!`;
+      } else {
+        resultMsg.textContent = `✅ Игра окончена! Вы набрали ${score} очков. Рекорд: ${record}`;
+      }
+      resultMsg.classList.add('show');
+    }
+
+    function spawnFloat(x, y) {
+      const el = document.createElement('div');
+      el.className = 'plus-one';
+      el.textContent = '+1';
+      el.style.left = (x - 10) + 'px';
+      el.style.top  = (y - 20) + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 700);
+    }
+  </script>
+</body>
+</html>
